@@ -11,10 +11,14 @@ dependencies:
   flutter:
     sdk: flutter
 
+  webview_flutter: ^2.3.1
+  dio: ^4.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^1.0.0
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
