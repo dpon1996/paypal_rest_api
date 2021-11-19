@@ -4,10 +4,12 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:paypal_rest_api/modelClass/basicData.dart';
-import 'package:paypal_rest_api/modelClass/shippingAddress.dart';
-import 'package:paypal_rest_api/showSnackbarMessage.dart';
+import 'package:paypal_payment_rest_api/modelClass/basicData.dart';
+import 'package:paypal_payment_rest_api/printString.dart';
+import 'package:paypal_payment_rest_api/showSnackbarMessage.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
+import 'modelClass/shippingAddress.dart';
 
 class PaypalPayment extends StatefulWidget {
   final String paypalAuthApi;
@@ -19,10 +21,12 @@ class PaypalPayment extends StatefulWidget {
   final String returnUrl;
   final String cancelUrl;
   final String initialUrl;
+  final bool isDebugMode;
   final ValueChanged<String> paymentId;
 
   const PaypalPayment({
     Key? key,
+    this.isDebugMode = false,
     required this.paypalAuthApi,
     required this.paypalPaymentApi,
     required this.paymentDetails,
@@ -76,13 +80,25 @@ class _PaypalPaymentState extends State<PaypalPayment> {
 
     dio.options.headers = {"authorization": authCredential};
     dio.options.contentType = "application/x-www-form-urlencoded";
+
+
     Map<String, String> data = {"grant_type": "client_credentials"};
 
     try {
+      PrintString("Auth api call executed",isDebugMode: widget.isDebugMode);
+
+      ///api call
       var resp = await dio.post(widget.paypalAuthApi, data: data);
 
+      PrintString("Auth api call completed",isDebugMode: widget.isDebugMode);
+
+      PrintString(resp.data,isDebugMode: widget.isDebugMode);
       authType = resp.data["token_type"];
       token = resp.data["access_token"];
+
+      PrintString("Auth token : $token",isDebugMode: widget.isDebugMode);
+      PrintString("Auth Type : $authType",isDebugMode: widget.isDebugMode);
+
       if (token == null) {
         showSnackbarMessage(context, "Something went wrong", onTap: () {
           _getToken();
@@ -94,6 +110,7 @@ class _PaypalPaymentState extends State<PaypalPayment> {
       showSnackbarMessage(context, "Something went wrong", onTap: () {
         _getToken();
       });
+      PrintString("Error : $e",isDebugMode: widget.isDebugMode);
     }
   }
 
@@ -147,7 +164,14 @@ class _PaypalPaymentState extends State<PaypalPayment> {
     dio.options.headers = {"authorization": "$authType $token"};
     dio.options.contentType = "application/json";
     try{
+      PrintString("Payment api call executed",isDebugMode: widget.isDebugMode);
+
       var resp = await dio.post(widget.paypalPaymentApi, data: data);
+
+      PrintString("Payment api call completed",isDebugMode: widget.isDebugMode);
+      PrintString(resp.data,isDebugMode: widget.isDebugMode);
+
+
       if(resp.data["links"] != null){
         List links = resp.data["links"];
         if (links.isNotEmpty) {
@@ -159,9 +183,13 @@ class _PaypalPaymentState extends State<PaypalPayment> {
             }
           });
         }
+        PrintString("Link : $links",isDebugMode: widget.isDebugMode);
+
         setState(() {});
         _controller?.loadUrl(approvalUrl);
         setState(() {});
+        PrintString("Load approvalUrl url",isDebugMode: widget.isDebugMode);
+
       }else{
         showSnackbarMessage(context, "Something went wrong", onTap: () {
           _paymentApi();
@@ -171,13 +199,19 @@ class _PaypalPaymentState extends State<PaypalPayment> {
       showSnackbarMessage(context, "Something went wrong", onTap: () {
         _paymentApi();
       });
+      PrintString("Error : $e",isDebugMode: widget.isDebugMode);
+
     }
   }
 
   _checkSuccess(String url) {
+    PrintString(url,isDebugMode: widget.isDebugMode);
+
     FocusScope.of(context).unfocus();
     if(url.contains(widget.returnUrl)){
       String payerId = url.split("PayerID=").last;
+      PrintString("payerId : $payerId",isDebugMode: widget.isDebugMode);
+
       _executePayment(payerId);
     }
   }
@@ -189,7 +223,12 @@ class _PaypalPaymentState extends State<PaypalPayment> {
     Map data = {"payer_id": "$paymentId"};
 
     try{
+      PrintString("Payment verify api call executed",isDebugMode: widget.isDebugMode);
+
       var resp = await dio.post(executeUrl,data: data);
+
+      PrintString("Payment verify api call completed",isDebugMode: widget.isDebugMode);
+      PrintString(resp.data,isDebugMode: widget.isDebugMode);
 
       if(resp.data["state"] != null){
         if(resp.data["state"] == "approved"){
@@ -207,6 +246,8 @@ class _PaypalPaymentState extends State<PaypalPayment> {
       showSnackbarMessage(context, "Something went wrong", onTap: () {
         _executePayment(paymentId);
       });
+      PrintString("Error : $e",isDebugMode: widget.isDebugMode);
+
     }
 
   }
